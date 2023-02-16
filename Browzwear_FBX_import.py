@@ -60,16 +60,15 @@ class FBXImporterPanel(bpy.types.Panel):
         layout = self.layout
 
         # Add a file browser to select the FBX file
+        layout.label(text="Import FBX File")
         layout.prop(context.scene, "fbx_path")
+        layout.operator("object.browzwear_fbx_import", text="Import File", icon="FILE")
 
-        # Add a button to execute the script
-        layout.operator("object.browzwear_fbx_import", text="Import Browzwear FBX", icon="FILE")
-        layout.separator(factor=3)
-        layout.separator()
+        layout.separator(factor=5)
+
         # Add a folder browser to select the folder with FBX files
+        layout.label(text="Import Folder")
         layout.prop(context.scene, "fbx_folder")
-
-        # Add a button to execute the script for all FBX files in the selected folder
         layout.operator("object.browzwear_fbx_import_folder", text="Import Folder", icon="FILE_FOLDER")
 
 class FBXImportOperator(bpy.types.Operator):
@@ -109,7 +108,7 @@ class FBXImportFolderOperator(bpy.types.Operator):
 
 def register():
     bpy.types.Scene.fbx_path = bpy.props.StringProperty(
-        name="FBX Path",
+        name="FBX File",
         subtype='FILE_PATH'
     )
 
