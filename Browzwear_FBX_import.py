@@ -1,6 +1,10 @@
 import bpy
 import os
 
+# Define a custom property
+bpy.types.Object.mat_search_keyword = bpy.props.StringProperty(name="Material Search Keyword", default="Mat")
+
+
 def import_fbx_file(fbx_path):
     # Import the FBX file and get the imported objects
     bpy.ops.import_scene.fbx(filepath=fbx_path, use_image_search=False)
@@ -77,6 +81,25 @@ class FBXImporterPanel(bpy.types.Panel):
             layout.prop(context.scene, "fbx_folder")
             layout.operator("object.browzwear_fbx_import_folder", text="Import Folder", icon="FILE_FOLDER")
 
+class FBXImporterPanelMatTool(bpy.types.Panel):
+    bl_idname = "OBJECT_PT_browzwear_fbx_importer_MatTool"
+    bl_label = "Browzwear FBX Importer Mat Tool"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'Browzwear FBX'
+    bl_parent_id = "OBJECT_PT_browzwear_fbx_importer"
+    bl_options = {"HIDE_HEADER"}
+
+    def draw(self, context):
+        layout = self.layout
+
+        # Add a label and text input field for material search keyword
+        row = layout.row()
+        row.label(text="Material search keyword:")
+        row.prop(context.scene, "material_search_keyword", text="")
+
+        # Add a button for searching and renaming materials
+        layout.operator("object.search_and_rename_materials", text="Search and Rename Materials")
 
 class FBXImportOperator(bpy.types.Operator):
     """Import FBX File"""
@@ -113,10 +136,32 @@ class FBXImportFolderOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class searchAndRenameMaterialsOperator(bpy.types.Operator):
+    """Search and rename materials"""
+    bl_idname = "object.search_and_rename_materials"
+    bl_label = "Search and Rename Materials"
+    bl_description = "Search selected object's materials and rename materials with the object's name"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    keyword: bpy.props.StringProperty(name="Keyword", default="Mat")
+
+    def execute(self, context):
+        search_keyword = context.object.mat_search_keyword
+        for obj in bpy.context.selected_objects:
+            if obj.type == 'MESH':
+                for mat_slot in obj.material_slots:
+                    if search_keyword.lower() in mat_slot.name.lower():
+                        new_name = mat_slot.name.replace(search_keyword, obj.name)
+                        mat_slot.material.name = new_name
+        return {'FINISHED'}
+
+
 classes = (
     FBXImporterPanel,
     FBXImportOperator,
-    FBXImportFolderOperator
+    FBXImportFolderOperator,
+    FBXImporterPanelMatTool,
+    searchAndRenameMaterialsOperator
 )
 
 def register():
@@ -140,6 +185,12 @@ def register():
         name="FBX Folder",
         subtype='DIR_PATH'
     )
+    
+    bpy.types.Scene.material_search_keyword = bpy.props.StringProperty(
+    name="Material Search Keyword",
+    default="Mat"
+)
+
 
 def unregister():
     for cls in reversed(classes):
