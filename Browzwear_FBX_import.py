@@ -25,6 +25,9 @@ def import_fbx_file(fbx_path):
     # Set the origin of the joined object to its geometry
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
 
+    #Apply Rotation/Scale
+    bpy.ops.object.transform_apply(scale = True, rotation = True)
+
     # Delete the non-mesh objects
     non_mesh_object_names = [obj.name for obj in non_mesh_objects]
     for obj in non_mesh_objects:
@@ -59,19 +62,24 @@ class FBXImporterPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        # Add a file browser to select the FBX file
-        layout.label(text="Import FBX File")
-        layout.prop(context.scene, "fbx_path")
-        layout.operator("object.browzwear_fbx_import", text="Import File", icon="FILE")
+        # Add dropdown for selecting file or folder
+        layout.prop(context.scene, "import_type", text="Select")
 
-        layout.separator(factor=5)
+        if context.scene.import_type == 'FILE':
+            # Add a file browser to select the FBX file
+            layout.label(text="Select FBX File to Import")
+            layout.prop(context.scene, "fbx_path")
+            layout.operator("object.browzwear_fbx_import", text="Import File", icon="FILE")
 
-        # Add a folder browser to select the folder with FBX files
-        layout.label(text="Import Folder")
-        layout.prop(context.scene, "fbx_folder")
-        layout.operator("object.browzwear_fbx_import_folder", text="Import Folder", icon="FILE_FOLDER")
+        elif context.scene.import_type == 'FOLDER':
+            # Add a folder browser to select the folder with FBX files
+            layout.label(text="Select Folder to import FBX files from")
+            layout.prop(context.scene, "fbx_folder")
+            layout.operator("object.browzwear_fbx_import_folder", text="Import Folder", icon="FILE_FOLDER")
+
 
 class FBXImportOperator(bpy.types.Operator):
+    """Import FBX File"""
     bl_idname = "object.browzwear_fbx_import"
     bl_label = "Import Browzwear FBX"
     bl_description = "Import a Browzwear FBX file and perform operations on the imported objects"
@@ -105,8 +113,24 @@ class FBXImportFolderOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+classes = (
+    FBXImporterPanel,
+    FBXImportOperator,
+    FBXImportFolderOperator
+)
 
 def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+    # Register the EnumProperty
+    bpy.types.Scene.import_type = bpy.props.EnumProperty(
+        name="Import Type",
+        items=[('FILE', "File", ""),
+               ('FOLDER', "Folder", "")],
+        default='FILE'
+    )
+
     bpy.types.Scene.fbx_path = bpy.props.StringProperty(
         name="FBX File",
         subtype='FILE_PATH'
@@ -117,17 +141,13 @@ def register():
         subtype='DIR_PATH'
     )
 
-    bpy.utils.register_class(FBXImporterPanel)
-    bpy.utils.register_class(FBXImportOperator)
-    bpy.utils.register_class(FBXImportFolderOperator)
-
 def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+
     del bpy.types.Scene.fbx_path
     del bpy.types.Scene.fbx_folder
-
-    bpy.utils.unregister_class(FBXImporterPanel)
-    bpy.utils.unregister_class(FBXImportOperator)
-    bpy.utils.unregister_class(FBXImportFolderOperator)
+    del bpy.types.Scene.import_type
 
 if __name__ == "__main__":
     register()
